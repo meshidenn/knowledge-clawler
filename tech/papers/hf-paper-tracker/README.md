@@ -1,6 +1,6 @@
 # HF Paper Tracker
 
-Hugging Face Daily Papers を自動追跡し、テーマ別に分類・要約・スコアリングして Gmail に届けるシステム。
+Hugging Face Daily Papers を自動追跡し、テーマ別に分類・要約・スコアリングして Gmail に届けるシステム。生成物の保存先は設定で切り替えられ、repo 内完結にも Obsidian へのエクスポートにも対応する。
 
 ## アーキテクチャ
 
@@ -10,7 +10,7 @@ cron (ローカルPC)
   ├── codex exec "..."              ← OpenAI Codex CLI で分析（日次: raw JSON → md／週次: 結合日次 → 週次 md）
   ├── uv run enrich_skip_links.py   ← スキップ論文を raw JSON でリンク付きに上書き
   ├── uv run send_email.py         ← Gmail SMTP で通知
-  └── git commit/push               ← 結果を papers/ に蓄積
+  └── git commit/push               ← 結果を設定した保存先に蓄積
 ```
 
 - 日次・週次の自動分析は **OpenAI Codex CLI** の `codex exec`（`scripts/run_daily.sh` / `run_weekly.sh` 内）
@@ -66,6 +66,19 @@ Codex CLI の認証は各環境の手順に従う（`run_daily.sh` / `run_weekly
 cat > .env << 'EOF'
 GMAIL_ADDRESS=your@gmail.com
 GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+
+# 生成物の保存先
+WORK_DIR=./papers
+LOG_DIR=./logs
+DAILY_OUTPUT_DIR=./papers/daily
+DAILY_RAW_DIR=./papers/daily/raw
+WEEKLY_OUTPUT_DIR=./papers/weekly
+
+# Obsidian へのエクスポートは任意
+EXPORT_TO_OBSIDIAN=false
+# EXPORT_TO_OBSIDIAN=true
+# OBSIDIAN_EXPORT_DAILY_DIR=/home/hiroki/Obsidian/intake/hf-papers/daily
+# OBSIDIAN_EXPORT_WEEKLY_DIR=/home/hiroki/Obsidian/intake/hf-papers/weekly
 EOF
 ```
 
@@ -74,7 +87,25 @@ EOF
 2. https://myaccount.google.com/apppasswords → アプリ名 `HF Paper Tracker` で作成
 3. 16文字のパスワードを `.env` に記載
 
-### 4. cron を設定
+### 4. 出力先を設定する
+
+デフォルトでは生成物は repo 内に保存される。
+
+- `WORK_DIR`: 生成物のルートディレクトリ
+- `LOG_DIR`: 実行ログの保存先
+- `DAILY_OUTPUT_DIR`: 日次 markdown の保存先
+- `DAILY_RAW_DIR`: HF API の raw JSON 保存先
+- `WEEKLY_OUTPUT_DIR`: 週次 markdown の保存先
+
+Obsidian にもコピーしたい場合だけ、次を有効化する。
+
+- `EXPORT_TO_OBSIDIAN=true`
+- `OBSIDIAN_EXPORT_DAILY_DIR=/path/to/Obsidian/intake/hf-papers/daily`
+- `OBSIDIAN_EXPORT_WEEKLY_DIR=/path/to/Obsidian/intake/hf-papers/weekly`
+
+別サーバーでは `EXPORT_TO_OBSIDIAN=false` のままでよい。固定パスをコードに埋める必要はない。
+
+### 5. cron を設定
 
 ```bash
 crontab -e
@@ -90,7 +121,7 @@ crontab -e
 0 10 * * 0   cd /path/to/hf-paper-tracker && source .env && export GMAIL_ADDRESS GMAIL_APP_PASSWORD && scripts/run_weekly.sh
 ```
 
-### 5. 動作確認
+### 6. 動作確認
 
 ```bash
 source .env && export GMAIL_ADDRESS GMAIL_APP_PASSWORD
@@ -122,6 +153,8 @@ hf-paper-tracker/
 │       └── 2026-W13.md          ← 週次分析
 └── logs/                        ← 実行ログ
 ```
+
+上の構成はデフォルト値。`.env` で保存先を変えた場合は、その設定先に生成される。
 
 ## ローカルでの対話利用
 

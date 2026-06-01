@@ -21,16 +21,50 @@ if [ -f .env ]; then
 fi
 
 WEEK_LABEL=$(date +%Y-W%V)
-OUTPUT_FILE="papers/weekly/${WEEK_LABEL}.md"
-LOG_FILE="logs/weekly-${WEEK_LABEL}.log"
+WORK_DIR="${WORK_DIR:-$REPO_DIR/papers}"
+LOG_DIR="${LOG_DIR:-$REPO_DIR/logs}"
+DAILY_OUTPUT_DIR="${DAILY_OUTPUT_DIR:-$WORK_DIR/daily}"
+WEEKLY_OUTPUT_DIR="${WEEKLY_OUTPUT_DIR:-$WORK_DIR/weekly}"
+
+OUTPUT_FILE="${WEEKLY_OUTPUT_DIR}/${WEEK_LABEL}.md"
+LOG_FILE="${LOG_DIR}/weekly-${WEEK_LABEL}.log"
 
 copy_weekly_to_obsidian() {
-    mkdir -p "$OBSIDIAN_HF_PAPERS_WEEKLY"
-    cp -f "$REPO_DIR/$OUTPUT_FILE" "$OBSIDIAN_HF_PAPERS_WEEKLY/$(basename "$OUTPUT_FILE")"
-    echo "[OK] Copied to $OBSIDIAN_HF_PAPERS_WEEKLY/$(basename "$OUTPUT_FILE")"
+    if [ "${EXPORT_TO_OBSIDIAN:-false}" != "true" ]; then
+        echo "[SKIP] EXPORT_TO_OBSIDIAN is disabled"
+        return 0
+    fi
+
+    if [ -z "${OBSIDIAN_EXPORT_WEEKLY_DIR:-}" ]; then
+        echo "[SKIP] OBSIDIAN_EXPORT_WEEKLY_DIR is not set"
+        return 0
+    fi
+
+    mkdir -p "$OBSIDIAN_EXPORT_WEEKLY_DIR"
+    cp -f "$OUTPUT_FILE" "$OBSIDIAN_EXPORT_WEEKLY_DIR/$(basename "$OUTPUT_FILE")"
+    echo "[OK] Copied to $OBSIDIAN_EXPORT_WEEKLY_DIR/$(basename "$OUTPUT_FILE")"
 }
 
-mkdir -p papers/weekly logs
+stage_dir_if_within_repo() {
+    local dir="$1"
+    local abs_dir
+
+    abs_dir="$(cd "$dir" 2>/dev/null && pwd)" || {
+        echo "[WARN] Cannot resolve directory for git add: $dir"
+        return 0
+    }
+
+    case "$abs_dir" in
+        "$REPO_DIR"|"$REPO_DIR"/*)
+            git add "$dir"
+            ;;
+        *)
+            echo "[WARN] Skip git add for external directory: $abs_dir"
+            ;;
+    esac
+}
+
+mkdir -p "$WEEKLY_OUTPUT_DIR" "$LOG_DIR"
 
 exec > >(tee -a "$LOG_FILE") 2>&1
 echo "=== Weekly Analysis: $WEEK_LABEL $(date +%H:%M:%S) ==="
@@ -42,13 +76,13 @@ if [ -f "$OUTPUT_FILE" ]; then
 fi
 
 # --- 今週の日次ファイルがあるか確認 ---
-DAILY_FILES=$(find papers/daily -maxdepth 1 -name "*.md" -newer papers/weekly/.gitkeep 2>/dev/null | sort || true)
+DAILY_FILES=$(find "$DAILY_OUTPUT_DIR" -maxdepth 1 -name "*.md" -newer "$WEEKLY_OUTPUT_DIR/.gitkeep" 2>/dev/null | sort || true)
 
 if [ -z "$DAILY_FILES" ]; then
     # .gitkeep より新しいファイルがない場合、今週の日付で探す
     MONDAY=$(date -d "last monday" +%Y-%m-%d 2>/dev/null || date -v-monday +%Y-%m-%d 2>/dev/null || date +%Y-%m-%d)
     echo "[INFO] Looking for files from $MONDAY onwards..."
-    DAILY_FILES=$(ls papers/daily/2*.md 2>/dev/null | sort || true)
+    DAILY_FILES=$(ls "$DAILY_OUTPUT_DIR"/2*.md 2>/dev/null | sort || true)
 fi
 
 if [ -z "$DAILY_FILES" ]; then
@@ -94,7 +128,8 @@ uv run scripts/send_email.py "$OUTPUT_FILE"
 
 # --- Git コミット & プッシュ ---
 echo "[3/4] Committing..."
-git add papers/ logs/
+stage_dir_if_within_repo "$WORK_DIR"
+stage_dir_if_within_repo "$LOG_DIR"
 if ! git diff --staged --quiet; then
     git commit -m "📊 $WEEK_LABEL weekly analysis"
     git push

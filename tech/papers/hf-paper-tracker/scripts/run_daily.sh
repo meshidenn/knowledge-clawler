@@ -21,17 +21,52 @@ if [ -f .env ]; then
 fi
 
 DATE=$(date +%Y-%m-%d)
-RAW_FILE="papers/daily/raw/${DATE}.json"
-OUTPUT_FILE="papers/daily/${DATE}.md"
-LOG_FILE="logs/${DATE}.log"
+WORK_DIR="${WORK_DIR:-$REPO_DIR/papers}"
+LOG_DIR="${LOG_DIR:-$REPO_DIR/logs}"
+DAILY_OUTPUT_DIR="${DAILY_OUTPUT_DIR:-$WORK_DIR/daily}"
+DAILY_RAW_DIR="${DAILY_RAW_DIR:-$WORK_DIR/daily/raw}"
+WEEKLY_OUTPUT_DIR="${WEEKLY_OUTPUT_DIR:-$WORK_DIR/weekly}"
+
+RAW_FILE="${DAILY_RAW_DIR}/${DATE}.json"
+OUTPUT_FILE="${DAILY_OUTPUT_DIR}/${DATE}.md"
+LOG_FILE="${LOG_DIR}/${DATE}.log"
 
 copy_daily_to_obsidian() {
-    mkdir -p "$OBSIDIAN_HF_PAPERS_DAILY"
-    cp -f "$REPO_DIR/$OUTPUT_FILE" "$OBSIDIAN_HF_PAPERS_DAILY/$(basename "$OUTPUT_FILE")"
-    echo "[OK] Copied to $OBSIDIAN_HF_PAPERS_DAILY/$(basename "$OUTPUT_FILE")"
+    if [ "${EXPORT_TO_OBSIDIAN:-false}" != "true" ]; then
+        echo "[SKIP] EXPORT_TO_OBSIDIAN is disabled"
+        return 0
+    fi
+
+    if [ -z "${OBSIDIAN_EXPORT_DAILY_DIR:-}" ]; then
+        echo "[SKIP] OBSIDIAN_EXPORT_DAILY_DIR is not set"
+        return 0
+    fi
+
+    mkdir -p "$OBSIDIAN_EXPORT_DAILY_DIR"
+    cp -f "$OUTPUT_FILE" "$OBSIDIAN_EXPORT_DAILY_DIR/$(basename "$OUTPUT_FILE")"
+    echo "[OK] Copied to $OBSIDIAN_EXPORT_DAILY_DIR/$(basename "$OUTPUT_FILE")"
 }
 
-mkdir -p papers/daily/raw papers/weekly logs
+stage_dir_if_within_repo() {
+    local dir="$1"
+    local abs_dir
+
+    abs_dir="$(cd "$dir" 2>/dev/null && pwd)" || {
+        echo "[WARN] Cannot resolve directory for git add: $dir"
+        return 0
+    }
+
+    case "$abs_dir" in
+        "$REPO_DIR"|"$REPO_DIR"/*)
+            git add "$dir"
+            ;;
+        *)
+            echo "[WARN] Skip git add for external directory: $abs_dir"
+            ;;
+    esac
+}
+
+mkdir -p "$DAILY_RAW_DIR" "$DAILY_OUTPUT_DIR" "$WEEKLY_OUTPUT_DIR" "$LOG_DIR"
 
 exec > >(tee -a "$LOG_FILE") 2>&1
 echo "=== Daily Intake: $DATE $(date +%H:%M:%S) ==="
@@ -91,7 +126,7 @@ uv run scripts/send_email.py "$OUTPUT_FILE"
 
 # --- Step 5: Git コミット & プッシュ ---
 echo "[5/6] Committing..."
-git add papers/
+stage_dir_if_within_repo "$WORK_DIR"
 if ! git diff --staged --quiet; then
     git commit -m "📄 ${DATE} daily intake"
     git push

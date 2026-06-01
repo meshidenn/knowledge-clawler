@@ -18,7 +18,7 @@ import requests
 
 JST = timezone(timedelta(hours=9))
 TODAY = datetime.now(JST).strftime("%Y-%m-%d")
-RAW_DIR = "papers/daily/raw"
+RAW_DIR = os.environ.get("DAILY_RAW_DIR", "papers/daily/raw")
 OUTPUT_PATH = f"{RAW_DIR}/{TODAY}.json"
 
 
