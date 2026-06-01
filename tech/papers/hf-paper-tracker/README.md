@@ -5,7 +5,7 @@ Hugging Face Daily Papers を自動追跡し、テーマ別に分類・要約・
 ## アーキテクチャ
 
 ```
-cron (ローカルPC)
+systemd user timer (ローカルPC / サーバー)
   ├── uv run fetch_papers.py        ← HF API からデータ取得（LLM なし・依存はスクリプト内 PEP 723）
   ├── codex exec "..."              ← OpenAI Codex CLI で分析（日次: raw JSON → md／週次: 結合日次 → 週次 md）
   ├── uv run enrich_skip_links.py   ← スキップ論文を raw JSON でリンク付きに上書き
@@ -58,7 +58,7 @@ codex --version    # インストール確認
 codex exec --help  # 利用可能か確認
 ```
 
-Codex CLI の認証は各環境の手順に従う（`run_daily.sh` / `run_weekly.sh` と同じ `codex` が cron でも使えること）。
+Codex CLI の認証は各環境の手順に従う（`run_daily.sh` / `run_weekly.sh` と同じ `codex` が systemd user service でも使えること）。
 
 ### 3. Gmail アプリパスワードを設定
 
@@ -105,20 +105,32 @@ Obsidian にもコピーしたい場合だけ、次を有効化する。
 
 別サーバーでは `EXPORT_TO_OBSIDIAN=false` のままでよい。固定パスをコードに埋める必要はない。
 
-### 5. cron を設定
+### 5. systemd user timer を設定
+
+`tech/papers` 全体の標準デプロイコマンドを使う。
 
 ```bash
-crontab -e
+cd /home/hiroki/work/knowledge/tech/papers
+./scripts/deploy_systemd_user_timers.sh
 ```
 
-以下を追記（パスは実際の場所に置き換え）。`scripts/cron_env.sh` で `~/.local/bin` と mise shims を `PATH` に足すため、通常は crontab 側で `PATH` を足さなくてよい。
+HF Paper Tracker だけ更新したい場合:
 
-```cron
-# 日次インテーク（平日朝9:00）
-0 9 * * 1-5  cd /path/to/hf-paper-tracker && source .env && export GMAIL_ADDRESS GMAIL_APP_PASSWORD && scripts/run_daily.sh
+```bash
+./scripts/install_systemd_user_timer.sh
+```
 
-# 週次トレンド分析（日曜10:00）
-0 10 * * 0   cd /path/to/hf-paper-tracker && source .env && export GMAIL_ADDRESS GMAIL_APP_PASSWORD && scripts/run_weekly.sh
+これで次の user units が作成・有効化される。
+
+- `hf-paper-tracker-daily.timer`: 月曜〜金曜 09:00
+- `hf-paper-tracker-weekly.timer`: 日曜 10:00
+
+状態確認:
+
+```bash
+systemctl --user list-timers 'hf-paper-tracker*'
+systemctl --user status hf-paper-tracker-daily.service hf-paper-tracker-weekly.service
+journalctl --user -u hf-paper-tracker-daily.service -u hf-paper-tracker-weekly.service --no-pager
 ```
 
 ### 6. 動作確認
@@ -140,8 +152,9 @@ hf-paper-tracker/
 │   ├── deep_dive_dialogue_prompt.md ← Phase2-3テンプレ・テーマ別質問集
 │   └── weekly_trend_analysis_prompt.md ← 運用Tips・検索ガイド
 ├── scripts/
-│   ├── run_daily.sh             ← 日次cron エントリポイント
-│   ├── run_weekly.sh            ← 週次cron エントリポイント
+│   ├── install_systemd_user_timer.sh ← systemd user timer を作成
+│   ├── run_daily.sh             ← 日次systemd エントリポイント
+│   ├── run_weekly.sh            ← 週次systemd エントリポイント
 │   ├── fetch_papers.py          ← HF API → JSON（`uv run`・依存はファイル先頭の `/// script`）
 │   ├── enrich_skip_links.py     ← 日次 md の「スキップした論文」を raw JSON でリンク付きに上書き
 │   └── send_email.py            ← Gmail SMTP 送信（同上・標準ライブラリのみ）
@@ -171,51 +184,12 @@ claude "今週の論文に関連度フィルタをかけて"
 ./scripts/run_weekly.sh
 ```
 
-## PC スリープ対策
+## 自動実行の運用
 
-### macOS: launchd（推奨）
-
-cron はスリープ中に動かないが、launchd はスリープ復帰後に未実行ジョブを拾う。
+`tech/papers` 配下のスケジューラは systemd user timer に統一する。共通ルールは親ディレクトリの `AGENTS.md` を参照。
 
 ```bash
-cat > ~/Library/LaunchAgents/com.hf-paper-tracker.daily.plist << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.hf-paper-tracker.daily</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/bin/bash</string>
-        <string>-c</string>
-        <string>cd /path/to/hf-paper-tracker && source .env && export GMAIL_ADDRESS GMAIL_APP_PASSWORD && scripts/run_daily.sh</string>
-    </array>
-    <key>StartCalendarInterval</key>
-    <dict>
-        <key>Hour</key>
-        <integer>9</integer>
-        <key>Minute</key>
-        <integer>0</integer>
-    </dict>
-</dict>
-</plist>
-EOF
-
-launchctl load ~/Library/LaunchAgents/com.hf-paper-tracker.daily.plist
-```
-
-### Linux: systemd timer
-
-```ini
-# ~/.config/systemd/user/hf-paper-daily.timer
-[Timer]
-OnCalendar=Mon..Fri 09:00
-Persistent=true
-[Install]
-WantedBy=timers.target
-```
-
-```bash
-systemctl --user enable --now hf-paper-daily.timer
+systemctl --user list-timers 'hf-paper-tracker*'
+systemctl --user status hf-paper-tracker-daily.service hf-paper-tracker-weekly.service
+journalctl --user -u hf-paper-tracker-daily.service -u hf-paper-tracker-weekly.service --no-pager
 ```

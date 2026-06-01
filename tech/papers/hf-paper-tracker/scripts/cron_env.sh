@@ -1,7 +1,7 @@
 # Sourced by run_daily.sh / run_weekly.sh.
-# cron のデフォルト PATH には ~/.local/bin や mise shims が入らないため、
+# systemd のデフォルト PATH には nvm, ~/.local/bin, mise shims が入らないため、
 # uv / codex / claude が「コマンドが見つかりません」になるのを防ぐ。
-export PATH="${HOME}/.local/bin:${HOME}/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin${PATH:+:$PATH}"
+export PATH="${HOME}/.nvm/versions/node/v22.22.2/bin:${HOME}/.local/bin:${HOME}/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin${PATH:+:$PATH}"
 
 # 生成物の保存先（必要に応じて .env で上書き）
 export WORK_DIR="${WORK_DIR:-}"

@@ -2,7 +2,7 @@
 
 ## 使い方
 
-1. cron が毎週日曜に `scripts/run_weekly.sh` を自動実行する
+1. systemd user timer が毎週日曜に `scripts/run_weekly.sh` を自動実行する
 2. 手動の場合は `scripts/run_weekly.sh` を実行（内部で OpenAI Codex `codex exec`）
 3. `papers/daily/*.md` の対象分が結合され Codex に渡される
 
@@ -139,11 +139,11 @@
 
 ### 日次インテーク（自動）
 
-cron が平日朝に `scripts/run_daily.sh` を実行。結果は `papers/daily/{日付}.md` に保存される。
+systemd user timer が平日朝に `scripts/run_daily.sh` を実行。結果は `papers/daily/{日付}.md` に保存される。
 
 ### 週次分析（自動）
 
-cron が日曜に `scripts/run_weekly.sh` を実行。`papers/daily/` の今週分を集約して分析。
+systemd user timer が日曜に `scripts/run_weekly.sh` を実行。`papers/daily/` の今週分を集約して分析。
 
 ### 手動で週次分析を実行する場合
 

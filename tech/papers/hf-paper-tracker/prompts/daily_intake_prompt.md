@@ -3,7 +3,7 @@
 ## 使い方
 
 1. CLAUDE.md がこのファイルを `@` 参照しているので、Claude Code が自動で読み込む
-2. cron で毎朝自動実行、または手動で `claude "今日のインテークして"` を実行
+2. systemd user timer で毎朝自動実行、または手動で `claude "今日のインテークして"` を実行
 3. 結果は `papers/daily/{日付}.md` に保存され、git で管理される
 
 > **週次分析テンプレートと同じProjectで運用する想定。**
@@ -143,15 +143,15 @@
 │   ├── daily/raw/         ← HF API の生JSON
 │   ├── daily/*.md         ← 日次インテーク結果
 │   └── weekly/*.md        ← 週次トレンド分析
-└── scripts/               ← cron 実行スクリプト
+└── scripts/               ← systemd 実行スクリプト
 ```
 
 ### 自動実行と手動実行の使い分け
 
 | 用途 | 実行方法 | 頻度 |
 |------|---------|------|
-| 日次インテーク | cron 自動実行 | 平日朝 |
-| 週次分析 | cron 自動実行 | 日曜 |
+| 日次インテーク | systemd user timer | 平日朝 |
+| 週次分析 | systemd user timer | 日曜 |
 | 論文深掘り | `claude "arXiv URLを深掘りして"` | 随時 |
 | 関連度フィルタ | `claude "今週の論文にフィルタかけて"` | 随時 |
 | テーマ見直し | `claude "テーマ見直しして"` | 3ヶ月ごと |

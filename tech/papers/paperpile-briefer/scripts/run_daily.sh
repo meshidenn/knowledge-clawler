@@ -103,12 +103,13 @@ if [ "$PAPER_COUNT" -eq 0 ]; then
 fi
 
 echo "[2/6] Generating Ochiai-format Markdown with Codex..."
+echo "[INFO] codex: $(command -v codex || echo 'not found')"
 if ! codex exec "
 $(cat prompts/ochiai_brief_prompt.md)
 
 日付は ${DATE} です。
 入力JSONは ${RAW_FILE} です。このファイルを読み、指定フォーマットでMarkdown本文だけを出力してください。
-" -s read-only -o "$OUTPUT_FILE" >/dev/null 2>&1; then
+" -s read-only -o "$OUTPUT_FILE"; then
   echo "[ERROR] Codex analysis failed"
   exit 1
 fi
