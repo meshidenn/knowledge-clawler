@@ -85,6 +85,40 @@ stage_if_inside_repo() {
   esac
 }
 
+pull_latest_if_enabled() {
+  if [ "${PUSH_TO_GIT:-true}" != "true" ]; then
+    return 0
+  fi
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "[WARN] Not inside a git worktree; skip pull"
+    return 0
+  fi
+  local branch
+  branch="$(git rev-parse --abbrev-ref HEAD)"
+  if [ -z "$branch" ] || [ "$branch" = "HEAD" ]; then
+    echo "[WARN] Detached HEAD; skip pull"
+    return 0
+  fi
+  echo "[0/8] Pulling latest origin/$branch..."
+  git pull --rebase origin "$branch"
+}
+
+push_markdown_outputs() {
+  if [ "${PUSH_TO_GIT:-true}" != "true" ]; then
+    echo "[SKIP] PUSH_TO_GIT=false"
+    return 0
+  fi
+  stage_if_inside_repo "$OUTPUT_DIR"
+  stage_if_inside_repo "$CHAT_DIR"
+  if ! git diff --staged --quiet; then
+    git commit -m "paperpile brief: $DATE"
+    git push
+    echo "[OK] Pushed Markdown to remote"
+  else
+    echo "[SKIP] Nothing to commit"
+  fi
+}
+
 mkdir -p "$OUTPUT_DIR" "$RAW_DIR" "$PAPER_RAW_DIR" "$CHAT_DIR" "$STATE_DIR" "$LOG_DIR"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
@@ -103,6 +137,8 @@ if [ -n "${PAPERPILE_SYNC_SCRIPT:-}" ]; then
   echo "[0/6] Syncing Paperpile export..."
   "$PAPERPILE_SYNC_SCRIPT"
 fi
+
+pull_latest_if_enabled
 
 if [ -f "$OUTPUT_FILE" ]; then
   echo "[SKIP] $OUTPUT_FILE already exists"
@@ -182,26 +218,14 @@ echo "[5/8] Writing daily index..."
 uv run scripts/write_daily_index.py --manifest "$MANIFEST_FILE" --output "$OUTPUT_FILE"
 uv run scripts/update_index.py --briefs-dir "$OUTPUT_DIR" --chat-dir "$CHAT_DIR"
 
-echo "[6/8] Marking papers as processed..."
-uv run scripts/mark_processed.py --raw "$RAW_FILE" --state "$STATE_FILE"
-
-echo "[7/8] Exporting Markdown..."
+echo "[6/8] Exporting Markdown..."
 copy_to_obsidian
 
-echo "[8/8] Commit, push, and notify..."
-if [ "${PUSH_TO_GIT:-false}" = "true" ]; then
-  stage_if_inside_repo "$OUTPUT_DIR"
-  stage_if_inside_repo "$CHAT_DIR"
-  if ! git diff --staged --quiet; then
-    git commit -m "paperpile brief: $DATE"
-    git push
-    echo "[OK] Pushed to remote"
-  else
-    echo "[SKIP] Nothing to commit"
-  fi
-else
-  echo "[SKIP] PUSH_TO_GIT=false"
-fi
+echo "[7/8] Commit and push Markdown..."
+push_markdown_outputs
+
+echo "[8/8] Marking papers as processed and notifying..."
+uv run scripts/mark_processed.py --raw "$RAW_FILE" --state "$STATE_FILE"
 
 notify_mobile "Paperpile Brief $DATE" "新規論文 ${PAPER_COUNT} 本の論文別briefを生成しました。Obsidianの paperpile-briefs/$DATE.md から読めます。"
 
