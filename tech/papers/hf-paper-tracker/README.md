@@ -10,7 +10,7 @@ systemd user timer (ローカルPC / サーバー)
   ├── codex exec "..."              ← OpenAI Codex CLI で分析（日次: raw JSON → md／週次: 結合日次 → 週次 md）
   ├── uv run enrich_skip_links.py   ← スキップ論文を raw JSON でリンク付きに上書き
   ├── uv run send_email.py         ← Gmail SMTP で通知
-  └── git commit/push               ← 結果を設定した保存先に蓄積
+  └── Obsidian export               ← 結果をObsidian intakeへコピー（git commit/pushは手動）
 ```
 
 - 日次・週次の自動分析は **OpenAI Codex CLI** の `codex exec`（`scripts/run_daily.sh` / `run_weekly.sh` 内）
@@ -79,6 +79,9 @@ EXPORT_TO_OBSIDIAN=false
 # EXPORT_TO_OBSIDIAN=true
 # OBSIDIAN_EXPORT_DAILY_DIR=/home/hiroki/Obsidian/intake/hf-papers/daily
 # OBSIDIAN_EXPORT_WEEKLY_DIR=/home/hiroki/Obsidian/intake/hf-papers/weekly
+
+# systemd実行ではGitHub pushしないのが標準
+PUSH_TO_GIT=false
 EOF
 ```
 
@@ -104,6 +107,8 @@ Obsidian にもコピーしたい場合だけ、次を有効化する。
 - `OBSIDIAN_EXPORT_WEEKLY_DIR=/path/to/Obsidian/intake/hf-papers/weekly`
 
 別サーバーでは `EXPORT_TO_OBSIDIAN=false` のままでよい。固定パスをコードに埋める必要はない。
+
+systemdからGitHubへpushする必要はないため、通常は `PUSH_TO_GIT=false` のままにする。必要なときだけ手動で `git add` / `git commit` / `git push` する。
 
 ### 5. systemd user timer を設定
 

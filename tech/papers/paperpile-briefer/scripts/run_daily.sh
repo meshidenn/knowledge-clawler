@@ -189,7 +189,7 @@ echo "[7/8] Exporting Markdown..."
 copy_to_obsidian
 
 echo "[8/8] Commit, push, and notify..."
-if [ "${PUSH_TO_GIT:-true}" = "true" ]; then
+if [ "${PUSH_TO_GIT:-false}" = "true" ]; then
   stage_if_inside_repo "$OUTPUT_DIR"
   stage_if_inside_repo "$CHAT_DIR"
   if ! git diff --staged --quiet; then

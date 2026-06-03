@@ -130,22 +130,26 @@ uv run scripts/send_email.py "$OUTPUT_FILE"
 echo "[3/4] Copying to Obsidian..."
 copy_weekly_to_obsidian
 
-# --- Git コミット & プッシュ ---
-echo "[4/4] Committing..."
-stage_dir_if_within_repo "$WORK_DIR"
-stage_dir_if_within_repo "$LOG_DIR"
-if ! git diff --staged --quiet; then
-    if git commit -m "📊 $WEEK_LABEL weekly analysis"; then
-        if git push; then
-            echo "[OK] Pushed to remote"
+# --- Git コミット & プッシュ（手動運用がデフォルト） ---
+echo "[4/4] Git commit/push..."
+if [ "${PUSH_TO_GIT:-false}" = "true" ]; then
+    stage_dir_if_within_repo "$WORK_DIR"
+    stage_dir_if_within_repo "$LOG_DIR"
+    if ! git diff --staged --quiet; then
+        if git commit -m "📊 $WEEK_LABEL weekly analysis"; then
+            if git push; then
+                echo "[OK] Pushed to remote"
+            else
+                echo "[WARN] git push failed; Obsidian export already completed"
+            fi
         else
-            echo "[WARN] git push failed; Obsidian export already completed"
+            echo "[WARN] git commit failed; Obsidian export already completed"
         fi
     else
-        echo "[WARN] git commit failed; Obsidian export already completed"
+        echo "[SKIP] Nothing to commit"
     fi
 else
-    echo "[SKIP] Nothing to commit"
+    echo "[SKIP] PUSH_TO_GIT=false"
 fi
 
 echo "=== Done: $(date +%H:%M:%S) ==="

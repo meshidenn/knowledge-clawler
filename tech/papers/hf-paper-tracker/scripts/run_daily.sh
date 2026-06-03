@@ -128,21 +128,25 @@ uv run scripts/send_email.py "$OUTPUT_FILE"
 echo "[5/6] Copying to Obsidian..."
 copy_daily_to_obsidian
 
-# --- Step 6: Git コミット & プッシュ ---
-echo "[6/6] Committing..."
-stage_dir_if_within_repo "$WORK_DIR"
-if ! git diff --staged --quiet; then
-    if git commit -m "📄 ${DATE} daily intake"; then
-        if git push; then
-            echo "[OK] Pushed to remote"
+# --- Step 6: Git コミット & プッシュ（手動運用がデフォルト） ---
+echo "[6/6] Git commit/push..."
+if [ "${PUSH_TO_GIT:-false}" = "true" ]; then
+    stage_dir_if_within_repo "$WORK_DIR"
+    if ! git diff --staged --quiet; then
+        if git commit -m "📄 ${DATE} daily intake"; then
+            if git push; then
+                echo "[OK] Pushed to remote"
+            else
+                echo "[WARN] git push failed; Obsidian export already completed"
+            fi
         else
-            echo "[WARN] git push failed; Obsidian export already completed"
+            echo "[WARN] git commit failed; Obsidian export already completed"
         fi
     else
-        echo "[WARN] git commit failed; Obsidian export already completed"
+        echo "[SKIP] Nothing to commit"
     fi
 else
-    echo "[SKIP] Nothing to commit"
+    echo "[SKIP] PUSH_TO_GIT=false"
 fi
 
 echo "=== Done: $(date +%H:%M:%S) ==="
