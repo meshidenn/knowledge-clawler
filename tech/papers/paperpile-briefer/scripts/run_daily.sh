@@ -227,6 +227,6 @@ push_markdown_outputs
 echo "[8/8] Marking papers as processed and notifying..."
 uv run scripts/mark_processed.py --raw "$RAW_FILE" --state "$STATE_FILE"
 
-notify_mobile "Paperpile Brief $DATE" "新規論文 ${PAPER_COUNT} 本の論文別briefを生成しました。Obsidianの paperpile-briefs/$DATE.md から読めます。"
+notify_mobile "Paperpile Brief $DATE" "新規論文 ${PAPER_COUNT} 本の論文別briefを生成しました。GitHub/repoの paperpile-briefer/briefs/$DATE.md から読めます。"
 
 echo "=== Done: $(date +%H:%M:%S) ==="

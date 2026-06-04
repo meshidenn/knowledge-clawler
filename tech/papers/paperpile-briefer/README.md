@@ -127,16 +127,16 @@ WantedBy=timers.target
 systemctl --user enable --now paperpile-briefer.timer
 ```
 
-## Obsidianへpushする
+## Obsidianへコピーする
 
 `.env`で次を設定します。
 
 ```bash
-EXPORT_TO_OBSIDIAN=true
+EXPORT_TO_OBSIDIAN=false
 OBSIDIAN_EXPORT_DIR=/home/hiroki/Obsidian/intake/paperpile-briefs
 ```
 
-Obsidian側では`briefs/YYYY-MM-DD.md`の目次から論文別briefを読み、各brief末尾の「追加で聞く」から`chat/YYYY-MM-DD/*.md`を開いて、そのままチャットへ投げられます。
+通常はGitHub/repoを正とするため `EXPORT_TO_OBSIDIAN=false` のままにする。Obsidianへもコピーしたい場合だけ `EXPORT_TO_OBSIDIAN=true` にする。
 
 ## モバイル通知とチャット
 
