@@ -19,10 +19,10 @@ EOF
 
 cat > "$UNIT_DIR/paperpile-briefer.timer" <<EOF
 [Unit]
-Description=Run Paperpile briefer every day at 06:00
+Description=Run Paperpile briefer every day at 04:30
 
 [Timer]
-OnCalendar=*-*-* 06:00
+OnCalendar=*-*-* 04:30
 Persistent=true
 
 [Install]

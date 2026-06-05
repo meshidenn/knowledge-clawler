@@ -116,7 +116,7 @@ ExecStart=/bin/bash scripts/run_daily.sh
 ```ini
 # ~/.config/systemd/user/paperpile-briefer.timer
 [Timer]
-OnCalendar=*-*-* 06:00
+OnCalendar=*-*-* 04:30
 Persistent=true
 
 [Install]

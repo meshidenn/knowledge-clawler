@@ -12,7 +12,7 @@ This directory contains automated paper-intake jobs under `tech/papers`.
 
 ## Current Schedules
 
-- `paperpile-briefer`: `paperpile-briefer.timer`, daily at `06:00`.
+- `paperpile-briefer`: `paperpile-briefer.timer`, daily at `04:30`.
 - `hf-paper-tracker`: `hf-paper-tracker-daily.timer`, Monday-Friday at `09:00`.
 - `hf-paper-tracker`: `hf-paper-tracker-weekly.timer`, Sunday at `10:00`.
 
