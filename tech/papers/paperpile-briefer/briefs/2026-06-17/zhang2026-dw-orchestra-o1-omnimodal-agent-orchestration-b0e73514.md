@@ -1,0 +1,37 @@
+# Paperpile Brief 2026-06-17 - Orchestra-o1: Omnimodal Agent Orchestration
+
+## 基本情報
+
+- **タイトル**: Orchestra-o1: Omnimodal Agent Orchestration
+- **著者**: Fan Zhang, Vireo Zhang, Shengju Qian, Haoxuan Li, Hao Wu, Jinyang Wu, Donghao Zhou, Zhihong Zhu, Zheng Lian, Xin Wang, Pheng-Ann Heng
+- **年 / venue**: 2026 / arXiv [cs.AI]
+- **リンク**: https://arxiv.org/abs/2606.13707 / PDF: https://arxiv.org/pdf/2606.13707.pdf / arXiv:2606.13707 / DOI: メタデータからは不明
+
+## 落合陽一フォーマット
+
+- **ひとことでいうと**: テキスト・画像・音声・動画が混在するタスクを、単一のオムニモーダルモデルに丸投げせず、主エージェントが専門サブエージェントとツールを動的に編成して解くためのエージェントオーケストレーション論文。
+- **先行研究と比べてどこがすごい？**: 既存のネイティブオムニモーダルエージェントや線形なオーケストレーション型エージェントに対し、モダリティ認識型のタスク分解、オンラインなサブエージェント専門化、並列サブタスク実行を組み合わせる。OmniGAIAでOrchestra-o1-GPT-5が72.8%を達成し、Gemini-3-Proを10.3ポイント、AOrchestra-GPT-5を32.8ポイント上回ったと報告している。
+- **技術や手法の肝はどこ？**: 主エージェントを「直接すべてを知覚するモデル」ではなく、`delegate` と `complete` を選ぶ階層的ポリシーとして定式化する点。画像・音声・動画分析などの知覚ツール、Web検索・ページ閲覧・コード実行などの行動ツールをサブエージェントに割り当て、依存関係のないサブタスクは並列に走らせる。さらにQwen3-8Bベースの主エージェントを、最終正解だけでなく委譲、ツール選択、停止判断などのステップ単位の意思決定に報酬を与えるDA-GRPOで訓練する。
+- **どうやって有効だと検証した？**: OmniGAIAベンチマークで、ネイティブオムニモーダルモデル、ReAct型エージェント、AOrchestraなどと比較。カテゴリ別・難易度別の精度、コスト効率、ハーネス設計のアブレーション、ポストトレーニング手法のアブレーションを実施している。Orchestra-o1-8Bは30.0%で、既存の最良オープンソース系ベースライン20.8%を上回ったとされる。
+- **議論はある？**: 評価は主にOmniGAIA中心で、他の実環境タスクや長期運用での頑健性は限定的。GPT-5やGemini-3-Proなど将来・商用モデル名を含む比較があり、再現時にはモデルアクセスやAPI仕様の影響を受ける可能性が高い。PDF抽出上、細かい表や数式は崩れている箇所があるため、数値の厳密確認は原PDFの表を見る必要がある。
+- **次に読む/試すなら**: 1. GitHub実装でサブエージェント定義とツール割当プロンプトを確認する。 2. OmniGAIAの小さなサンプルで、線形実行と並列実行の差を再現する。 3. DA-GRPOの報酬設計が自分のエージェント評価に流用できるか見る。
+- **キーワード**: `omnimodal agent`, `agent orchestration`, `multi-agent systems`, `DA-GRPO`, `OmniGAIA`, `tool use`
+
+## 気になったこと
+
+- サブエージェントの失敗や矛盾する観測結果を、主エージェントがどの程度検出・修正できるのか。
+- 並列化によるコスト削減は、APIレイテンシやツール呼び出し制限がある実運用でも同じように効くのか。
+- DA-GRPOの「decision quality」報酬を誰がどう採点しており、別ドメインへ移したときに報酬設計をどれだけ作り直す必要があるのか。
+- AOrchestra、ToolOrchestra、OmniGAIAとの関係を追うと、この分野の評価軸が整理できそう。
+
+## そのまま聞ける質問
+
+- この論文の主張で一番弱い仮定は？
+- 実装に落とすなら最小再現実験は？
+- 関連研究として追加で探すべきキーワードは？
+---
+
+## 追加で聞く
+
+- Chat prompt: [zhang2026-dw-orchestra-o1-omnimodal-agent-orchestration-b0e73514.md](../../chat/2026-06-17/zhang2026-dw-orchestra-o1-omnimodal-agent-orchestration-b0e73514.md)
+- モバイルではObsidian Mobileで上のchatファイルを開き、本文をChatGPT mobileへ貼る。
