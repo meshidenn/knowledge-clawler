@@ -9,13 +9,13 @@ if [ ! -f "$VAULT_ROOT/.arscontexta" ]; then
     exit 0
 fi
 
-# 書き込まれたファイルパスを取得（CLAUDE_TOOL_INPUTから）
-WRITTEN_FILE=$(echo "${CLAUDE_TOOL_INPUT:-}" | python3 -c "
+# 書き込まれたファイルパスを取得（フック入力は stdin の JSON。tool_input.file_path に入る）
+WRITTEN_FILE=$(python3 -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
-    print(data.get('file_path', ''))
-except:
+    print(data.get('tool_input', {}).get('file_path', '') or data.get('file_path', ''))
+except Exception:
     print('')
 " 2>/dev/null)
 
