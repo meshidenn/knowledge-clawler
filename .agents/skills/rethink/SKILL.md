@@ -77,7 +77,7 @@ Read all methodology notes fully. Extract:
 
 Read:
 - `ops/config.yaml` — current configuration state
-- The context file (CLAUDE.md) — current behavioral instructions
+- The context file (AGENTS.md) — current behavioral instructions
 - `ops/derivation-manifest.md` — vocabulary and feature state
 
 ### 0c. Compare Across Three Drift Types

@@ -264,9 +264,9 @@ ops/queue/article.md                               <- task file created
 
 **Living doc (outside {DOMAIN:inbox}):**
 ```
-CLAUDE.md -> stays as CLAUDE.md (no move)
-ops/queue/archive/2026-01-30-claude-md/           <- folder still created
-ops/queue/claude-md.md                             <- task file created
+AGENTS.md -> stays as AGENTS.md (no move)
+ops/queue/archive/2026-01-30-Codex-md/           <- folder still created
+ops/queue/Codex-md.md                             <- task file created
 ```
 
 When /archive-batch runs later, it moves task files into the existing archive folder and generates a summary.

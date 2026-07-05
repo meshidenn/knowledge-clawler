@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/hiroki-iida/works/knowledge-clawler/.codex/hooks/validate-note.sh'"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/hiroki-iida/works/knowledge-clawler/.codex/hooks/session-orient.sh'"
+          }
+        ]
+      }
+    ]
+  }
+}
