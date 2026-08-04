@@ -4,11 +4,12 @@ Paperpileに追加した論文を、落合陽一フォーマットでまとめ�
 
 ## 最新
 
-- Brief: [Paperpile Daily Brief 2026-08-04](2026-08-04.md)
-- Chat prompt: [chat/2026-08-04.md](../chat/2026-08-04.md)
+- Brief: [Paperpile Daily Brief 2026-08-05](2026-08-05.md)
+- Chat prompt: [chat/2026-08-05.md](../chat/2026-08-05.md)
 
 ## 最近のbrief
 
+- [Paperpile Daily Brief 2026-08-05](2026-08-05.md)
 - [Paperpile Daily Brief 2026-08-04](2026-08-04.md)
 - [Paperpile Daily Brief 2026-08-03](2026-08-03.md)
 - [Paperpile Daily Brief 2026-08-02](2026-08-02.md)
@@ -38,4 +39,3 @@ Paperpileに追加した論文を、落合陽一フォーマットでまとめ�
 - [Paperpile Daily Brief 2026-06-25](2026-06-25.md)
 - [Paperpile Daily Brief 2026-06-24](2026-06-24.md)
 - [Paperpile Daily Brief 2026-06-23](2026-06-23.md)
-- [Paperpile Daily Brief 2026-06-20](2026-06-20.md)
