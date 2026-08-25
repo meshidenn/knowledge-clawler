@@ -1,0 +1,40 @@
+# Paperpile Brief 2026-08-26 - PARC: An autonomous self-reflective coding agent for robust execution of long-horizon tasks
+
+## 基本情報
+
+- **タイトル**: PARC: An autonomous self-reflective coding agent for robust execution of long-horizon tasks
+- **著者**: Yuki Orimo, Iori Kurata, Hodaka Mori, Ryuhei Okuno, Ryohto Sawada, Daisuke Okanohara
+- **年 / venue**: 2025 / arXiv [cs.AI]
+- **リンク**: [arXiv:2512.03549](https://arxiv.org/abs/2512.03549)
+
+## 落合陽一フォーマット
+
+- **ひとことでいうと**: 長期・多段の計算タスクを、計画役と独立コンテキストの実行役、自己評価・自己フィードバックで完走させるコーディングエージェント「PARC」を提案・検証した論文。
+- **先行研究と比べてどこがすごい？**: 単一エージェントが履歴を積み上げる設計ではなく、タスクごとのコンテキスト分離と成果物・要約の引き継ぎを採用し、局所的な実行失敗だけでなく「戦略そのものが誤っている」問題の修正を狙う。モデルを変えず、エージェント設計だけで長期タスク性能を伸ばす点が主張の核。
+- **技術や手法の肝はどこ？**: Plannerが人間承認可能なタスク列を作成し、Workerが各タスクを独立コンテキストで実行する。共有ワークスペースにはコード・データ・設定を残し、タスク結果は後続用の要約として受け渡す。各段階で自己評価し、品質不足なら修正・再実行し、前提が崩れた場合は停止して人間に差し戻す。
+- **どうやって有効だと検証した？**: Claude Sonnet 4.5を用い、10〜20タスク・約100ステップ規模の事例で評価した。材料科学ではLGPSのLi拡散活性化エネルギーを0.231 eVと再現研究の約0.18 eVに近い値で推定し、Cr-Ni合金のMC計算ではB添加によるFCC相低下とN添加での構造維持を再現した。Kaggleポリマー予測ではMordred利用時に平均 \(R^2=0.781\) と公開ノートブックの0.764を上回り、パズル課題ではベースラインより約2.1万手改善した。
+- **議論はある？**: 評価は主にケーススタディで、標準的なベンチマークとの統制比較や成功率・コストの体系評価は限定的。実際に周期境界条件をまたぐ変位計算、NPT平衡化、MC試行規則の一部で未検出の実装ミスが生じている。計画は事前にタスク分解しやすい問題を前提とし、外部ツールの自律発見やトップ性能への到達も未解決。
+- **次に読む/試すなら**:
+  1. SWE-Bench Proなどで、自己評価あり・なしのアブレーションを確認する。
+  2. 小規模な研究ワークフローで、タスク要約の形式と停止・差し戻し条件を実装する。
+  3. 自己評価を別モデル・テスト・形式検証で多重化し、自己採点の見逃しを測る。
+- **キーワード**: `coding agent`, `long-horizon tasks`, `multi-agent system`, `self-reflection`, `self-feedback`, `AI for Science`
+
+## 気になったこと
+
+- 自己評価が誤りを見逃した事例に対し、どの検証器・テスト・レビュー体制を追加すれば改善するか。
+- Plannerのタスク粒度、再計画条件、タスク間要約の品質が成功率・トークン消費・計算費用へ与える影響。
+- Kaggleの比較は公開ノートブック等が中心であり、同一split・同一計算予算・複数試行での比較が必要。
+- 人間承認を必要とする計画段階を含むため、「完全自律」の範囲と人間介入コストを明確化したい。
+
+## そのまま聞ける質問
+
+- この論文の主張で一番弱い仮定は？
+- 実装に落とすなら最小再現実験は？
+- 関連研究として追加で探すべきキーワードは？
+---
+
+## 追加で聞く
+
+- Chat prompt: [orimo2025-mo-parc-an-autonomous-self-reflective-coding-agent-for-robust-769a641c.md](../../chat/2026-08-26/orimo2025-mo-parc-an-autonomous-self-reflective-coding-agent-for-robust-769a641c.md)
+- モバイルではObsidian Mobileで上のchatファイルを開き、本文をChatGPT mobileへ貼る。
