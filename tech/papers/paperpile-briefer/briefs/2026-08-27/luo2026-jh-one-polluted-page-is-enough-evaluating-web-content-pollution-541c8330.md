@@ -1,0 +1,39 @@
+# Paperpile Brief 2026-08-27 - One polluted page is enough: Evaluating web content pollution in generative recommenders
+
+## 基本情報
+
+- **タイトル**: One polluted page is enough: Evaluating web content pollution in generative recommenders
+- **著者**: Minghao Luo, Liang Chen
+- **年 / venue**: 2026 / arXiv [cs.CL]
+- **リンク**: [arXiv:2606.13610](https://arxiv.org/abs/2606.13610) / [FORGE benchmark](https://github.com/leoluolol/forge-benchmark)
+
+## 落合陽一フォーマット
+
+- **ひとことでいうと**: Web検索を根拠に商品推薦するLLMは、検索上位のたった1ページを偽レビューへ汚染されるだけでも、存在しない商品を推薦してしまうことを示したベンチマーク研究。
+- **先行研究と比べてどこがすごい？**: Prompt injectionや閉域RAGのpoisoningではなく、SEO経由で混入する自然な偽UGC（レビュー等）を対象にした点が新しい。実Web検索結果を凍結し、URL・順位・文体を保ったままブランド名だけを偽商品へ置換することで、現実的かつ再現可能な評価にしている。
+- **技術や手法の肝はどこ？**: FORGEは225商品・15カテゴリ・5推薦シナリオについて、検索上位10件の証拠束を作り、上位1〜3件の実在ブランドを架空ブランドへ局所置換する。回答に偽ブランドが現れた割合を fooled rate として測る。偽商品が回答の最上位に置かれる位置情報も評価する。
+- **どうやって有効だと検証した？**: 商用・open-weightを含む12モデルを全225商品で評価した。上位1ページだけの汚染でも fooled rate は最大27%、上位3ページの置換では最大73.8%に達した。偽推薦は単なる言及ではなく、99%が推薦リスト内に現れることも監査している。英語での追試でもカテゴリごとの脆弱性傾向を確認した。
+- **議論はある？**: 評価は実Webを汚染せず凍結ページを局所改変するシミュレーションであり、実際の検索順位操作や長期的なWeb環境の影響は未検証。主評価は中国語・中国向け検索設定で、一般化には留保がある。人手での対象ブランド検証は行うが、最終的には単一アノテータへの依存も残る。懐疑的プロンプトや合意フィルタは十分に防御できず、正当な商品も抑制しうる。
+- **次に読む/試すなら**:
+  1. FORGEを用いて、自分が使う検索拡張型推薦パイプラインの fooled rate を測る。
+  2. 検索順位・ドメイン信頼性・複数独立ソースの整合性を組み合わせた防御を設計する。
+  3. 商品知識が薄いロングテールカテゴリを優先してレッドチーム評価する。
+- **キーワード**: `LLM recommender`, `web content pollution`, `GEO`, `RAG security`, `fake reviews`, `benchmark`
+
+## 気になったこと
+
+- 偽ブランドを局所置換したページが、実際にSEOで上位化した偽ページとどの程度同じ挙動を引き起こすか。
+- 信頼性再ランキングが「偽商品の約6分の1」しか除去できない原因は、ドメイン評価・本文内容・検索順位のどこにあるか。
+- 推薦前にモデル自身の事前知識と取得文書を照合する際、正当な新製品やローカル店舗を落とさずに済む設計は可能か。
+
+## そのまま聞ける質問
+
+- この論文の主張で一番弱い仮定は？
+- 実装に落とすなら最小再現実験は？
+- 関連研究として追加で探すべきキーワードは？
+---
+
+## 追加で聞く
+
+- Chat prompt: [luo2026-jh-one-polluted-page-is-enough-evaluating-web-content-pollution-541c8330.md](../../chat/2026-08-27/luo2026-jh-one-polluted-page-is-enough-evaluating-web-content-pollution-541c8330.md)
+- モバイルではObsidian Mobileで上のchatファイルを開き、本文をChatGPT mobileへ貼る。
