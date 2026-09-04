@@ -1,0 +1,40 @@
+# Paperpile Brief 2026-09-05 - Ignorance or Incompetence? Constructing Knowledge-Gated, Verifiable Tasks for LLM Agents
+
+## 基本情報
+
+- **タイトル**: Ignorance or Incompetence? Constructing Knowledge-Gated, Verifiable Tasks for LLM Agents
+- **著者**: Hanlin Tian, Minhao Li, Yu Mi, Sihan Zhu, Zhao Yang, Yuxiang Wang, Hongquan Zhu, Qiufei Hu
+- **年 / venue**: 2026 / arXiv [cs.AI]
+- **リンク**: [arXiv:2608.30322v1](https://arxiv.org/abs/2608.30322v1)
+
+## 落合陽一フォーマット
+
+- **ひとことでいうと**: LLMエージェントが「知識を知らない」ために失敗しているのか「能力が足りない」ために失敗しているのかを切り分ける、知識ゲート付き・検証可能なタスク構築プロトコルを提案した。
+- **先行研究と比べてどこがすごい？**: 単に補助資料を与えるのではなく、タスク指示と私的な知識アーティファクトを分離し、指示文をバイト単位で同一に保った提供／非提供条件、リーク監査、実行可能な正解検証を組み合わせた点が新しい。検証した15タスクでは、対象設定でアーティファクトありの通過率68.0%、なし0%だった。
+- **技術や手法の肝はどこ？**: 数KB規模のアーティファクトに、非導出的な内部規約・正規化表などの「convention gate」や、実装が煩雑な計算手続きを含む「operator gate」を置く。正解は決定的ソルバ／ルールコーパスで検証し、同一指示への知識アブレーションを5試行ずつ行って、知識依存性を満たすタスクだけを残す。
+- **どうやって有効だと検証した？**: 15の候補タスクで、アーティファクト提供・非提供のペア評価、誤ったがもっともらしいアーティファクトを渡す対照実験、2タスクのrecitation probeを実施した。5試行の経験的スクリーニングにより7タスクを採択し、そのうち5タスクとツール群を公開している。
+- **議論はある？**: 実験は構築プロトコルの知識依存性を示したもので、post-trainingの改善は検証していない。試行数は各条件5回、リーク監査の自動化は15タスク中9件に限られ、静的監査では意味的・間接的リークを排除できない。さらに結果はモデルと実行ハーネスに依存し、自由形式出力でのルーブリック評価は未実証である。
+- **次に読む/試すなら**:  
+  1. 公開リポジトリの5タスクで、同一エージェントへの知識アブレーションを再現する。  
+  2. 共通ハーネス・別モデルで再評価し、知識不足とツール利用／出力形式の失敗を分離する。  
+  3. 採択タスク群と非ゲートタスク群を用いた、保持評価付きpost-training比較を設計する。
+- **キーワード**: `LLM agents`, `knowledge gating`, `verifiable rewards`, `task construction`, `agent evaluation`, `leak audit`
+
+## 気になったこと
+
+- 「知識が必要」なことと「私的な正解規約を記憶・適用できる」ことは異なる。実務能力への転移をどう測るか。
+- 15タスク・各条件5試行では、採択境界付近の安定性が不明である。
+- アーティファクトの内容・長さ・提示形式が結果をどこまで左右するか。本文の圧縮実験は1タスクのみである。
+- 意味的リークを検出する監査と、公開後の汚染検知をどのように自動化するか。
+
+## そのまま聞ける質問
+
+- この論文の主張で一番弱い仮定は？
+- 実装に落とすなら最小再現実験は？
+- 関連研究として追加で探すべきキーワードは？
+---
+
+## 追加で聞く
+
+- Chat prompt: [tian2026-lg-ignorance-or-incompetence-constructing-knowledge-gated-verif-d5b367f0.md](../../chat/2026-09-05/tian2026-lg-ignorance-or-incompetence-constructing-knowledge-gated-verif-d5b367f0.md)
+- モバイルではObsidian Mobileで上のchatファイルを開き、本文をChatGPT mobileへ貼る。
