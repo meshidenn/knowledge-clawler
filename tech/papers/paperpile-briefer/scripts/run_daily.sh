@@ -29,6 +29,27 @@ OUTPUT_FILE="$OUTPUT_DIR/$DATE.md"
 CHAT_FILE="$CHAT_DIR/$DATE.md"
 LOG_FILE="$LOG_DIR/$DATE.log"
 ACTIVITY_LOG="$LOG_DIR/activity.md"
+EXPORT_STAGE_DIR=""
+LOCAL_EXPORT_PATH=""
+
+stage_export_locally() {
+  local export_name
+
+  export_name="$(basename "$PAPERPILE_EXPORT_PATH")"
+  EXPORT_STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/paperpile-export.XXXXXX")"
+  LOCAL_EXPORT_PATH="$EXPORT_STAGE_DIR/$export_name"
+  # Google Drive上のファイルを直接Pythonから読まず、ローカルへ退避してから読む。
+  if ! cp -f "$PAPERPILE_EXPORT_PATH" "$LOCAL_EXPORT_PATH"; then
+    echo "[ERROR] Failed to stage Paperpile export locally: $PAPERPILE_EXPORT_PATH"
+    return 1
+  fi
+  if [ ! -s "$LOCAL_EXPORT_PATH" ]; then
+    echo "[ERROR] Staged Paperpile export is empty: $LOCAL_EXPORT_PATH"
+    return 1
+  fi
+  trap 'rm -rf "$EXPORT_STAGE_DIR"' EXIT
+  echo "[OK] Staged Paperpile export locally: $LOCAL_EXPORT_PATH"
+}
 
 copy_to_obsidian() {
   if [ "${EXPORT_TO_OBSIDIAN:-false}" != "true" ]; then
@@ -147,8 +168,9 @@ if [ -f "$OUTPUT_FILE" ]; then
 fi
 
 echo "[1/6] Reading Paperpile export..."
+stage_export_locally
 uv run scripts/fetch_new_papers.py \
-  --export "$PAPERPILE_EXPORT_PATH" \
+  --export "$LOCAL_EXPORT_PATH" \
   --state "$STATE_FILE" \
   --output "$RAW_FILE" \
   --date "$DATE"
@@ -183,9 +205,7 @@ uv run scripts/prepare_paper_briefs.py \
 
 echo "[4/8] Generating per-paper Ochiai-format Markdown with Codex..."
 echo "[INFO] codex: $(command -v codex || echo 'not found')"
-mapfile -t PAPER_ROWS < <(uv run python -c "import json; m=json.load(open('$MANIFEST_FILE')); [print('\t'.join([p['raw'], p['brief'], p['chat'], p['title'].replace('\t', ' ')])) for p in m['papers']]")
-for PAPER_ROW in "${PAPER_ROWS[@]}"; do
-  IFS=$'\t' read -r PAPER_RAW PAPER_BRIEF PAPER_CHAT PAPER_TITLE <<< "$PAPER_ROW"
+while IFS=$'\t' read -r PAPER_RAW PAPER_BRIEF PAPER_CHAT PAPER_TITLE; do
   echo "[INFO] Briefing: $PAPER_TITLE"
   if ! codex exec "
 $(cat prompts/ochiai_brief_prompt.md)
@@ -214,7 +234,7 @@ $(cat prompts/ochiai_brief_prompt.md)
     echo "- Chat prompt: [$(basename "$PAPER_CHAT")](../../chat/$DATE/$(basename "$PAPER_CHAT"))"
     echo "- モバイルではObsidian Mobileで上のchatファイルを開き、本文をChatGPT mobileへ貼る。"
   } >> "$PAPER_BRIEF"
-done
+done < <(uv run python -c "import json; m=json.load(open('$MANIFEST_FILE')); [print('\t'.join([p['raw'], p['brief'], p['chat'], p['title'].replace('\t', ' ')])) for p in m['papers']]")
 
 echo "[5/8] Writing daily index..."
 uv run scripts/write_daily_index.py --manifest "$MANIFEST_FILE" --output "$OUTPUT_FILE"

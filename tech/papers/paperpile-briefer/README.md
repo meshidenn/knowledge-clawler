@@ -88,9 +88,17 @@ PUSH_TO_GIT=true
 
 `raw/`、`state/`、日別の詳細ログ`logs/YYYY-MM-DD.log`はローカル運用データとして`.gitignore`対象のままです。Codexでの通常の深掘りは、GitHub経由で同期された`briefs/YYYY-MM-DD.md`と`chat/YYYY-MM-DD/*.md`から始めます。
 
-## 翌朝6時に実行
+## 翌朝4時30分に実行
 
-`tech/papers` 配下の自動実行は systemd user timer に統一しています。
+macOSでは `launchd` user agentを使います。
+
+```bash
+cd /Users/hiroki-iida/works/knowledge-clawler/tech/papers/paperpile-briefer
+PAPERPILE_EXPORT_PATH="$HOME/Library/CloudStorage/GoogleDrive-mesitahiro@gmail.com/マイドライブ/Paperpile/paperpile.bib" \
+PUSH_TO_GIT=false ./scripts/install_launchd_user_agent.sh
+```
+
+Linuxサーバーでは、従来どおりsystemd user timerを使います。
 
 標準は親ディレクトリから一括デプロイします。
 
