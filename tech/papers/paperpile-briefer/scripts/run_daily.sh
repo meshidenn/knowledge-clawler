@@ -29,17 +29,31 @@ OUTPUT_FILE="$OUTPUT_DIR/$DATE.md"
 CHAT_FILE="$CHAT_DIR/$DATE.md"
 LOG_FILE="$LOG_DIR/$DATE.log"
 ACTIVITY_LOG="$LOG_DIR/activity.md"
+SLACK_STATE_DIR="$RAW_DIR/$DATE.slack-state"
+SLACK_SENT_FILE="$RAW_DIR/$DATE.slack-threads.sent"
 EXPORT_STAGE_DIR=""
 LOCAL_EXPORT_PATH=""
 
 stage_export_locally() {
   local export_name
+  local copy_attempt
+  local copy_attempts="${PAPERPILE_EXPORT_COPY_ATTEMPTS:-6}"
+  local retry_seconds="${PAPERPILE_EXPORT_COPY_RETRY_SECONDS:-30}"
 
   export_name="$(basename "$PAPERPILE_EXPORT_PATH")"
   EXPORT_STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/paperpile-export.XXXXXX")"
   LOCAL_EXPORT_PATH="$EXPORT_STAGE_DIR/$export_name"
   # Google Drive上のファイルを直接Pythonから読まず、ローカルへ退避してから読む。
-  if ! cp -f "$PAPERPILE_EXPORT_PATH" "$LOCAL_EXPORT_PATH"; then
+  for ((copy_attempt = 1; copy_attempt <= copy_attempts; copy_attempt++)); do
+    if cp -f "$PAPERPILE_EXPORT_PATH" "$LOCAL_EXPORT_PATH"; then
+      break
+    fi
+    if [ "$copy_attempt" -lt "$copy_attempts" ]; then
+      echo "[WARN] Paperpile export copy failed (attempt ${copy_attempt}/${copy_attempts}); retrying in ${retry_seconds}s"
+      sleep "$retry_seconds"
+    fi
+  done
+  if [ ! -s "$LOCAL_EXPORT_PATH" ]; then
     echo "[ERROR] Failed to stage Paperpile export locally: $PAPERPILE_EXPORT_PATH"
     return 1
   fi
@@ -94,6 +108,104 @@ notify_mobile() {
     --message "$message" \
     --url "$url" \
     --env-file "$notify_env_file" || true
+}
+
+build_slack_parent_message() {
+  local paper_raw="$1"
+  local output_file="$2"
+
+  python3 - "$paper_raw" <<'PY' > "$output_file"
+import json
+import sys
+from urllib.parse import quote
+
+paper = json.load(open(sys.argv[1], encoding="utf-8"))["papers"][0]
+title = str(paper.get("title") or "")
+authors = paper.get("authors") or []
+if isinstance(authors, str):
+    authors = [authors]
+
+formatted_authors = []
+for author in authors:
+    author = str(author).strip()
+    if "," in author:
+        family, given = [part.strip() for part in author.split(",", 1)]
+        author = f"{given} {family}".strip()
+    if author:
+        formatted_authors.append(author)
+
+url = str(paper.get("url") or "").strip()
+doi = str(paper.get("doi") or "").strip()
+arxiv_id = str(paper.get("arxiv_id") or "").strip()
+if not url and doi:
+    url = f"https://doi.org/{doi.removeprefix('doi:')}"
+if not url and arxiv_id:
+    url = f"https://arxiv.org/abs/{arxiv_id.removeprefix('arXiv:')}"
+if not url and "arxiv" in str(paper.get("venue") or "").lower():
+    url = "https://arxiv.org/search/?query=" + quote(title) + "&searchtype=title"
+
+print(title)
+if formatted_authors:
+    print(f"著者: {', '.join(formatted_authors)}")
+if url:
+    print(f"論文: {url}")
+PY
+}
+
+notify_slack_threads() {
+  local hermes_python="${HERMES_PYTHON:-/Users/hiroki-iida/.hermes/hermes-agent/venv/bin/python}"
+  local hermes_home="${HERMES_HOME:-/Users/hiroki-iida/personal-ops/.hermes}"
+  local slack_target="${PAPERPILE_SLACK_TARGET:-slack:C0C4MDEGSUU}"
+  local paper_key
+  local parent_ts
+  local parent_result_file
+  local reply_result_file
+
+  if [ "${PAPERPILE_SLACK_ENABLED:-true}" != "true" ]; then
+    echo "[SKIP] PAPERPILE_SLACK_ENABLED=false"
+    return 0
+  fi
+
+  mkdir -p "$SLACK_STATE_DIR"
+  while IFS=$'\t' read -r paper_raw paper_brief _paper_chat paper_title; do
+    paper_key="$(basename "$paper_raw" .json)"
+    parent_ts_file="$SLACK_STATE_DIR/$paper_key.parent_ts"
+    sent_file="$SLACK_STATE_DIR/$paper_key.sent"
+    parent_result_file="$SLACK_STATE_DIR/$paper_key.parent.json"
+    reply_result_file="$SLACK_STATE_DIR/$paper_key.reply.json"
+
+    if [ -f "$sent_file" ]; then
+      echo "[SKIP] Slack already sent: $paper_title"
+      continue
+    fi
+
+    if [ -f "$parent_ts_file" ]; then
+      parent_ts="$(cat "$parent_ts_file")"
+      echo "[RETRY] Sending pending Slack thread reply: $paper_title"
+    else
+      echo "[INFO] Sending Slack paper title: $paper_title"
+      build_slack_parent_message "$paper_raw" "$SLACK_STATE_DIR/$paper_key.title"
+      HERMES_HOME="$hermes_home" "$hermes_python" -m hermes_cli.main send \
+        --to "$slack_target" \
+        --file "$SLACK_STATE_DIR/$paper_key.title" \
+        --json > "$parent_result_file"
+      parent_ts="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1])).get("message_id", ""))' "$parent_result_file")"
+      if [ -z "$parent_ts" ]; then
+        echo "[ERROR] Slack parent message did not return a thread id: $paper_title"
+        return 1
+      fi
+      printf '%s\n' "$parent_ts" > "$parent_ts_file"
+    fi
+
+    echo "[INFO] Sending Slack thread summary: $paper_title"
+    HERMES_HOME="$hermes_home" "$hermes_python" -m hermes_cli.main send \
+      --to "${slack_target}:${parent_ts}" \
+      --file "$paper_brief" \
+      --json > "$reply_result_file"
+    touch "$sent_file"
+  done < <(uv run python -c "import json; m=json.load(open('$MANIFEST_FILE')); [print('\\t'.join([p['raw'], p['brief'], p['chat'], p['title'].replace('\\t', ' ')])) for p in m['papers']]")
+
+  touch "$SLACK_SENT_FILE"
 }
 
 stage_if_inside_repo() {
@@ -163,6 +275,10 @@ fi
 pull_latest_if_enabled
 
 if [ -f "$OUTPUT_FILE" ]; then
+  if [ -f "$MANIFEST_FILE" ] && [ ! -f "$SLACK_SENT_FILE" ]; then
+    echo "[RETRY] Sending pending per-paper Slack updates for $DATE"
+    notify_slack_threads
+  fi
   echo "[SKIP] $OUTPUT_FILE already exists"
   exit 0
 fi
@@ -248,6 +364,8 @@ push_markdown_outputs
 
 echo "[8/8] Marking papers as processed and notifying..."
 uv run scripts/mark_processed.py --raw "$RAW_FILE" --state "$STATE_FILE"
+
+notify_slack_threads
 
 notify_mobile "Paperpile Brief $DATE" "新規論文 ${PAPER_COUNT} 本の論文別briefを生成しました。GitHub/repoの paperpile-briefer/briefs/$DATE.md から読めます。"
 

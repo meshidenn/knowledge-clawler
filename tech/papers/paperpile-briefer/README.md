@@ -166,6 +166,15 @@ GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
 
 Gmail認証を `hf-paper-tracker/.env` に置いている場合、デフォルトでその `GMAIL_*` だけを通知スクリプトが読みます。
 
+Hermesが設定済みの場合、論文別briefの生成後にSlackへ新規論文を投稿できます。論文ごとに親投稿へタイトル・著者・論文リンクを投稿し、そのスレッドへ対応する論文のまとめを返信します。リンクはPaperpileのURL、DOI、arXiv IDの順に使い、いずれもない場合はarXivタイトル検索リンクを使います。デフォルトの投稿先はIida privateの `#daily-papers`（`C0C4MDEGSUU`）です。
+
+```bash
+PAPERPILE_SLACK_ENABLED=true
+PAPERPILE_SLACK_TARGET=slack:C0C4MDEGSUU
+```
+
+投稿先のSlackチャンネルには、あらかじめHermes botを参加させてください。Slack送信に失敗した場合は、論文ごとの親投稿IDを保存し、次回実行時に重複投稿を避けながら未完了のスレッド返信だけを再送します。
+
 モバイルでは Obsidian Mobile で `paperpile-briefs/YYYY-MM-DD.md` を開き、気になる論文の `chat` リンクを開いて本文を ChatGPT mobile に貼ります。
 
 ## skipの意味
