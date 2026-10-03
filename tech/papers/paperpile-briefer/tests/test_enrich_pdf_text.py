@@ -12,6 +12,14 @@ SPEC.loader.exec_module(enrich_pdf_text)
 
 
 class EnrichPdfTextTest(unittest.TestCase):
+    def test_sanitize_json_value_replaces_lone_surrogates_and_preserves_pairs(self):
+        value = {"text": "before\ud800after", "emoji": "\ud83d\ude00"}
+
+        sanitized = enrich_pdf_text.sanitize_json_value(value)
+
+        self.assertEqual(sanitized["text"], "before�after")
+        self.assertEqual(sanitized["emoji"], "😀")
+
     def test_canonical_arxiv_id_from_urls(self):
         self.assertEqual(enrich_pdf_text.canonical_arxiv_id("arXiv:2401.01234v2"), "2401.01234v2")
         self.assertEqual(enrich_pdf_text.canonical_arxiv_id("https://arxiv.org/abs/2401.01234"), "2401.01234")

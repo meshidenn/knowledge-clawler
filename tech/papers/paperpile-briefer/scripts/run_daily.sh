@@ -33,6 +33,7 @@ SLACK_STATE_DIR="$RAW_DIR/$DATE.slack-state"
 SLACK_SENT_FILE="$RAW_DIR/$DATE.slack-threads.sent"
 EXPORT_STAGE_DIR=""
 LOCAL_EXPORT_PATH=""
+CURRENT_STEP="startup"
 
 stage_export_locally() {
   local export_name
@@ -108,6 +109,27 @@ notify_mobile() {
     --message "$message" \
     --url "$url" \
     --env-file "$notify_env_file" || true
+}
+
+notify_failure() {
+  local exit_code="$1"
+  local hermes_python="${HERMES_PYTHON:-/Users/hiroki-iida/.hermes/hermes-agent/venv/bin/python}"
+  local hermes_home="${HERMES_HOME:-/Users/hiroki-iida/personal-ops/.hermes}"
+  local slack_target="${PAPERPILE_SLACK_TARGET:-slack:C0C4MDEGSUU}"
+  local failure_message
+
+  if [ "$exit_code" -eq 0 ] || [ "${PAPERPILE_SLACK_ENABLED:-true}" != "true" ]; then
+    return 0
+  fi
+
+  failure_message="⚠️ Paperpile Briefer failed (${DATE})
+Step: ${CURRENT_STEP}
+Exit code: ${exit_code}
+Log: ${LOG_FILE}"
+  HERMES_HOME="$hermes_home" "$hermes_python" -m hermes_cli.main send \
+    --to "$slack_target" \
+    --json \
+    "$failure_message" >/dev/null 2>&1 || true
 }
 
 build_slack_parent_message() {
@@ -255,6 +277,7 @@ push_markdown_outputs() {
 
 mkdir -p "$OUTPUT_DIR" "$RAW_DIR" "$PAPER_RAW_DIR" "$CHAT_DIR" "$STATE_DIR" "$LOG_DIR"
 exec > >(tee -a "$LOG_FILE") 2>&1
+trap 'exit_code=$?; notify_failure "$exit_code"' EXIT
 
 echo "=== Paperpile Daily Brief: $DATE $(date +%H:%M:%S) ==="
 
@@ -264,6 +287,7 @@ if [ -z "${PAPERPILE_EXPORT_PATH:-}" ]; then
 fi
 
 if [ -n "${PAPERPILE_SYNC_SCRIPT:-}" ]; then
+  CURRENT_STEP="sync_paperpile_export"
   if [ ! -x "$PAPERPILE_SYNC_SCRIPT" ]; then
     echo "[ERROR] PAPERPILE_SYNC_SCRIPT is not executable: $PAPERPILE_SYNC_SCRIPT"
     exit 1
@@ -283,6 +307,7 @@ if [ -f "$OUTPUT_FILE" ]; then
   exit 0
 fi
 
+CURRENT_STEP="stage_paperpile_export"
 echo "[1/6] Reading Paperpile export..."
 stage_export_locally
 uv run scripts/fetch_new_papers.py \
@@ -305,6 +330,7 @@ if [ "$PAPER_COUNT" -eq 0 ]; then
 fi
 
 echo "[2/8] Extracting PDF text..."
+CURRENT_STEP="enrich_pdf_text"
 PDF_ENRICH_ARGS=(--raw "$RAW_FILE")
 if [ -n "${PAPERPILE_PDF_BASE_DIR:-}" ]; then
   PDF_ENRICH_ARGS+=(--paperpile-base-dir "$PAPERPILE_PDF_BASE_DIR")
@@ -312,6 +338,7 @@ fi
 uv run scripts/enrich_pdf_text.py "${PDF_ENRICH_ARGS[@]}"
 
 echo "[3/8] Preparing per-paper brief targets..."
+CURRENT_STEP="prepare_paper_briefs"
 uv run scripts/prepare_paper_briefs.py \
   --raw "$RAW_FILE" \
   --briefs-dir "$OUTPUT_DIR" \
@@ -320,6 +347,7 @@ uv run scripts/prepare_paper_briefs.py \
   --manifest "$MANIFEST_FILE"
 
 echo "[4/8] Generating per-paper Ochiai-format Markdown with Codex..."
+CURRENT_STEP="generate_briefs"
 echo "[INFO] codex: $(command -v codex || echo 'not found')"
 while IFS=$'\t' read -r PAPER_RAW PAPER_BRIEF PAPER_CHAT PAPER_TITLE; do
   echo "[INFO] Briefing: $PAPER_TITLE"
@@ -353,16 +381,20 @@ $(cat prompts/ochiai_brief_prompt.md)
 done < <(uv run python -c "import json; m=json.load(open('$MANIFEST_FILE')); [print('\t'.join([p['raw'], p['brief'], p['chat'], p['title'].replace('\t', ' ')])) for p in m['papers']]")
 
 echo "[5/8] Writing daily index..."
+CURRENT_STEP="write_daily_index"
 uv run scripts/write_daily_index.py --manifest "$MANIFEST_FILE" --output "$OUTPUT_FILE"
 uv run scripts/update_index.py --briefs-dir "$OUTPUT_DIR" --chat-dir "$CHAT_DIR"
 
 echo "[6/8] Exporting Markdown..."
+CURRENT_STEP="export_markdown"
 copy_to_obsidian
 
 echo "[7/8] Commit and push Markdown..."
+CURRENT_STEP="push_markdown_outputs"
 push_markdown_outputs
 
 echo "[8/8] Marking papers as processed and notifying..."
+CURRENT_STEP="mark_processed_and_notify"
 uv run scripts/mark_processed.py --raw "$RAW_FILE" --state "$STATE_FILE"
 
 notify_slack_threads

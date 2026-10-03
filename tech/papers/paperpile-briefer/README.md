@@ -175,6 +175,10 @@ PAPERPILE_SLACK_TARGET=slack:C0C4MDEGSUU
 
 投稿先のSlackチャンネルには、あらかじめHermes botを参加させてください。Slack送信に失敗した場合は、論文ごとの親投稿IDを保存し、次回実行時に重複投稿を避けながら未完了のスレッド返信だけを再送します。
 
+HermesのSlack gatewayに `#daily-papers`（`C0C4MDEGSUU`）を追加すると、論文スレッドへの質問にも回答できます。gatewayは親投稿のthread timestampから対応する `raw/YYYY-MM-DD/papers/*.json` を特定し、`pdf_status=ok` の場合は `pdf_text` を主根拠に日本語で返信します。PDF未取得の論文では、その旨を明示してbrief/abstractベースの回答に留めます。手順は `prompts/slack_pdf_qa_prompt.md` にあります。
+
+Paperpileの取得やbrief生成に失敗した場合は、同じSlackチャンネルへ失敗通知を送ります。通知自体が失敗しても、元のエラーを隠さないように処理を継続します。
+
 モバイルでは Obsidian Mobile で `paperpile-briefs/YYYY-MM-DD.md` を開き、気になる論文の `chat` リンクを開いて本文を ChatGPT mobile に貼ります。
 
 ## skipの意味

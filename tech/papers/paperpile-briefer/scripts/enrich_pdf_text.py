@@ -28,6 +28,23 @@ OPENALEX_API_URL = "https://api.openalex.org/works"
 USER_AGENT = "paperpile-briefer/1.0"
 
 
+def sanitize_json_value(value: Any) -> Any:
+    """JSONを書き込めない不正なサロゲート文字を置換する。"""
+    if isinstance(value, str):
+        # 正しいサロゲートペアは1文字へ戻し、孤立したものは置換文字にする。
+        return value.encode("utf-16", "surrogatepass").decode("utf-16", "replace")
+    if isinstance(value, dict):
+        return {
+            sanitize_json_value(key): sanitize_json_value(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [sanitize_json_value(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(sanitize_json_value(item) for item in value)
+    return value
+
+
 def resolve_pdf_path(raw_path: str, base_dir: Path | None) -> Path:
     expanded = Path(raw_path).expanduser()
     if expanded.is_absolute() or base_dir is None:
@@ -318,6 +335,7 @@ def main() -> int:
         "max_pages_per_paper": args.max_pages,
         "arxiv_fallback": cache_dir is not None,
     }
+    data = sanitize_json_value(data)
     raw_path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
     print(f"[OK] PDF text extracted for {ok}/{data['pdf_enrichment']['count']} papers")
     return 0

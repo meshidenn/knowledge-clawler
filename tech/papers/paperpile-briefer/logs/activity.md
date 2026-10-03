@@ -18,3 +18,4 @@
 - 2026-08-30 04:31:06: new_papers=0 source=/home/hiroki/Obsidian/intake/papers/paperpile.bib
 - 2026-08-31 04:31:06: new_papers=0 source=/home/hiroki/Obsidian/intake/papers/paperpile.bib
 - 2026-09-06 04:31:06: new_papers=0 source=/home/hiroki/Obsidian/intake/papers/paperpile.bib
+- 2026-10-04 04:30:01: new_papers=0 source=/Users/hiroki-iida/Library/CloudStorage/GoogleDrive-mesitahiro@gmail.com/マイドライブ/Paperpile/paperpile.bib
